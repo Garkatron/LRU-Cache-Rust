@@ -1,4 +1,4 @@
-use std::collections::{HashMap, VecDeque};
+use std::{collections::{HashMap, VecDeque}, option};
 
 /*
 move_to_front(&mut self, key: K):
@@ -27,29 +27,50 @@ impl<K: Clone + std::cmp::Eq + std::hash::Hash + for<'a> std::cmp::PartialEq<&'a
     pub fn put(&mut self, key: &K, value: V) {
         if self.map.contains_key(&key) {
             self.order.retain(|k| k != &key);
+        } else {
+            self.evict();
         }
-
-        if self.order.len() >= self.capacity {
-            if let Some(t) = self.order.pop_back() {
-                self.map.remove(&t);
-            }
-        }
+        
         self.map.insert(key.clone(), value);
         self.order.push_front(key.clone());
     }
 
-    pub fn get(&mut self, key: &K) -> Option<&V> {
-        if self.map.contains_key(&key) {
-            self.map.get(&key)
+    pub fn get(&mut self, key: K) -> Option<&V> {
+        if let Some(value) = self.map.get(&key) {
+            self.order.retain(|k|k!=&key);
+            self.order.push_front(key);
+            Some(value)  // Retornar el valor
         } else {
-            None
+            None  // La clave no existe
         }
     }
+
 
     pub fn remove(&mut self, key: &K) {
         if self.map.contains_key(&key) {  
             self.order.retain(|k| k != key);
             self.map.remove(&key);
         } 
+    }
+
+    pub fn move_to_front(&mut self, key: K) {
+        if self.map.contains_key(&key) {
+            self.order.retain(|k|k!=&key);
+            self.order.push_front(key);
+        }
+    }
+    pub fn move_to_back(&mut self, key: K) {
+        if self.map.contains_key(&key) {
+            self.order.retain(|k|k!=&key);
+            self.order.push_back(key);
+        }
+    }
+
+    fn evict(&mut self) {
+        if self.order.len() >= self.capacity {
+            if let Some(t) = self.order.pop_back() {
+                self.map.remove(&t);
+            }
+        }
     }
 }
